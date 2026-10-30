@@ -2,136 +2,52 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://script.google.com https://script.googleusercontent.com; connect-src https://script.google.com https://script.googleusercontent.com; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
-<title>接続テスト</title>
-<style>
-  body { font-family: sans-serif; font-size: 28px; padding: 3vh 4vw; background: #fdf8ee; color: #2b2b2b; }
-  h1 { font-size: 36px; margin: 0 0 1vh; }
-  ul { list-style: none; padding: 0; margin: 0; }
-  li { margin: 1.2vh 0; }
-  .ok { color: #2f7d4a; font-weight: bold; }
-  .ng { color: #c0392b; font-weight: bold; }
-  .wait { color: #777; }
-  small { color: #777; font-size: 18px; word-break: break-all; }
-</style>
+<title>ホームボード</title>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<h1>接続テスト</h1>
-<ul>
-  <li>GET fetch: <span id="get" class="wait">確認中…</span></li>
-  <li>POST fetch: <span id="post" class="wait">確認中…</span></li>
-  <li>JSONP script: <span id="jsonp" class="wait">確認中…</span></li>
-  <li>localStorage: <span id="ls" class="wait">確認中…</span></li>
-  <li>Cookie: <span id="ck" class="wait">確認中…</span></li>
-  <li>前回(localStorage): <span id="prevLs" class="wait">確認中…</span></li>
-  <li>前回(Cookie): <span id="prevCk" class="wait">確認中…</span></li>
-  <li>機能: <span id="feat" class="wait">確認中…</span></li>
-  <li>visibilitychange 回数: <span id="vis" class="wait">0</span></li>
-</ul>
-<p><small id="ua"></small></p>
-<script>
-(function () {
-  var API = 'https://script.google.com/macros/s/AKfycby0qWi6DHsbWcFAFCyjcVX2TT5725cdc-ttSZScFKXrthTCkpgHL5QKsNeiQn3v0xcWbw/exec';
-  function $(id) { return document.getElementById(id); }
-  function show(id, ok, text) {
-    var el = $(id);
-    el.className = ok ? 'ok' : 'ng';
-    el.textContent = (ok ? 'OK ' : 'NG ') + (text || '');
-  }
-  function note(id, text, found) {
-    var el = $(id);
-    el.className = found ? 'ok' : 'wait';
-    el.textContent = text;
-  }
-  function pad(n) { return n < 10 ? '0' + n : '' + n; }
-  function stamp() {
-    var d = new Date();
-    return d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-  }
-  $('ua').textContent = navigator.userAgent;
-  var now = stamp();
-  var KEY = 'probeLast';
+<div class="page">
+  <header>
+    <div id="clock"></div>
+    <div id="status"></div>
+  </header>
 
-  // GET
-  if (typeof fetch === 'function') {
-    fetch(API + '?t=' + Date.now())
-      .then(function (r) { return r.json(); })
-      .then(function (d) { show('get', !!d.ok, d.now || ''); })
-      .catch(function (e) { show('get', false, String(e)); });
-    // POST (text/plain)
-    fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: '{"probe":"x"}' })
-      .then(function (r) { return r.json(); })
-      .then(function (d) { show('post', d.ok === true && d.method === 'POST', 'len=' + d.len + ' ' + (d.now || '')); })
-      .catch(function (e) { show('post', false, String(e)); });
-  } else {
-    show('get', false, 'fetchなし');
-    show('post', false, 'fetchなし');
-  }
+  <section id="board" class="card">
+    <h2>連絡板</h2>
+    <div class="meta"><span id="sender"></span><small id="time"></small></div>
+    <div class="body">
+      <div id="text">読み込み中…</div>
+      <img id="photo" alt="写真">
+    </div>
+    <div class="actions">
+      <button type="button" data-reply="わかった！">わかった！</button>
+      <button type="button" data-reply="今帰ったよ">今帰ったよ</button>
+      <button type="button" data-reply="電話して">電話して</button>
+      <button type="button" id="readBtn" disabled>読んだ</button>
+    </div>
+    <div id="prev"></div>
+  </section>
 
-  // JSONP
-  var timer = setTimeout(function () { show('jsonp', false, '時間切れ'); }, 15000);
-  window.pingCb = function (d) { clearTimeout(timer); show('jsonp', !!d.ok, d.now || ''); };
-  var s = document.createElement('script');
-  s.src = API + '?callback=pingCb&t=' + Date.now();
-  s.onerror = function () { clearTimeout(timer); show('jsonp', false, '読み込みエラー'); };
-  document.body.appendChild(s);
+  <div class="side">
+    <section id="wx" class="card"><h2>天気</h2><div id="wxBody"><div class="soon">準備中</div></div></section>
+    <section class="card"><h2>今週の給食</h2><div class="soon">準備中</div></section>
+  </div>
 
-  // localStorage
-  var prevLs = null;
-  try {
-    prevLs = localStorage.getItem(KEY);
-    var tok = 't' + Date.now();
-    localStorage.setItem('probeTmp', tok);
-    show('ls', localStorage.getItem('probeTmp') === tok, '書き込みと読み戻し');
-    localStorage.removeItem('probeTmp');
-    localStorage.setItem(KEY, now);
-  } catch (e) { show('ls', false, String(e)); }
+  <section id="week" class="card"><h2>今週の予定</h2><div id="weekList"><div class="soon">準備中</div></div></section>
+</div>
+<div id="toast"></div>
 
-  // Cookie
-  function getCookie(name) {
-    var m = document.cookie.split('; ');
-    for (var i = 0; i < m.length; i++) {
-      var p = m[i].indexOf('=');
-      if (p > 0 && m[i].slice(0, p) === name) return decodeURIComponent(m[i].slice(p + 1));
-    }
-    return null;
-  }
-  function setCookie(name, v) {
-    document.cookie = name + '=' + encodeURIComponent(v) + '; max-age=31536000; path=/; SameSite=Lax';
-  }
-  var prevCk = null;
-  try {
-    prevCk = getCookie(KEY);
-    var ct = 'c' + Date.now();
-    setCookie('probeTmp', ct);
-    show('ck', getCookie('probeTmp') === ct, '書き込みと読み戻し');
-    document.cookie = 'probeTmp=; max-age=0; path=/';
-    setCookie(KEY, now);
-  } catch (e) { show('ck', false, String(e)); }
+<div id="pair" class="hidden">
+  <h1>おうちの人に番号をもらってね</h1>
+  <div id="pairCode"></div>
+  <div id="pairMsg"></div>
+  <div id="keypad"></div>
+</div>
 
-  // 前回の記録
-  note('prevLs', prevLs ? prevLs : 'なし（初回）', !!prevLs);
-  note('prevCk', prevCk ? prevCk : 'なし（初回）', !!prevCk);
-
-  // 機能の有無
-  var feats = {
-    Promise: typeof Promise !== 'undefined',
-    fetch: typeof fetch === 'function',
-    AbortController: typeof AbortController !== 'undefined',
-    visibilitychange: typeof document.hidden !== 'undefined'
-  };
-  var all = true, txt = [];
-  for (var k in feats) { txt.push(k + (feats[k] ? ':あり' : ':なし')); if (!feats[k]) all = false; }
-  show('feat', all, txt.join(' '));
-
-  // visibilitychange 回数
-  var n = 0;
-  document.addEventListener('visibilitychange', function () {
-    n++;
-    $('vis').textContent = n + '（' + document.visibilityState + '）';
-  });
-})();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
