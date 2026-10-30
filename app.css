@@ -66,6 +66,16 @@ h2 { margin: 0 0 0.8vh; font-size: clamp(16px, 2.6vh, 34px); color: var(--accent
 .wx-pops { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0.4em; font-size: clamp(13px, 2vh, 26px); line-height: 1.2; color: var(--sub); white-space: nowrap; }
 .wx-pops b { color: var(--ink); font-weight: normal; }
 .wx-umb { align-self: flex-start; font-size: 0.95em; font-weight: bold; color: #fff; background: var(--accent); border-radius: 8px; padding: 0 0.6em; white-space: nowrap; }
+#ln { display: flex; flex-direction: column; overflow: hidden; }
+#lnBody { flex: 1; min-height: 0; display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); gap: 0.3vh; }
+.ln-day { display: flex; gap: 0.5vw; min-height: 0; align-items: center; overflow: hidden; padding: 0.2vh 0.4vw; border-radius: 8px;
+  border: 2px solid transparent; border-bottom-color: var(--line); font-size: clamp(10px, 1.55vh, 20px); line-height: 1.2; }
+.ln-day.today { background: #fff3e6; border-color: var(--accent); }
+.ln-day.past { opacity: 0.45; }
+.ln-date { flex: none; font-weight: bold; white-space: nowrap; }
+.ln-dishes { flex: 1; min-width: 0; overflow: hidden; word-break: break-all; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.ln-dishes.off { color: #d0453b; }
+.ln-dishes.miss { color: var(--sub); }
 #toast { position: fixed; left: 50%; bottom: 4vh; transform: translateX(-50%); background: rgba(40,40,40,0.92); color: #fff;
   padding: 1.4vh 2.4vw; border-radius: 40px; font-size: clamp(18px, 3vh, 40px); opacity: 0; transition: opacity .3s; pointer-events: none; }
 #toast.show { opacity: 1; }

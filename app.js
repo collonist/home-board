@@ -235,6 +235,34 @@
     for (var i = 0; i < w.days.length; i++) body.appendChild(wxDay(w.days[i], w.source));
   }
 
+  function lunchRow(d) {
+    var row = wxEl('div', 'ln-day' + (d.isToday ? ' today' : '') + (d.isPast ? ' past' : ''));
+    row.appendChild(wxEl('div', 'ln-date', d.md + '(' + d.dow + ')'));
+    var txt;
+    var cls = 'ln-dishes';
+    if (d.missing) {
+      txt = '献立未登録';
+      cls += ' miss';
+    } else if (d.type === 'holiday' || d.type === 'no_lunch') {
+      txt = d.note || (d.type === 'holiday' ? '休み' : '給食なし');
+      cls += ' off';
+    } else {
+      txt = (d.dishes || []).join('・');
+    }
+    row.appendChild(wxEl('div', cls, txt));
+    return row;
+  }
+
+  function renderLunch(l) {
+    var body = $('lnBody');
+    if (!l || !l.days || !l.days.length) {
+      body.innerHTML = '<div class="soon">準備中</div>';
+      return;
+    }
+    body.innerHTML = '';
+    for (var i = 0; i < l.days.length; i++) body.appendChild(lunchRow(l.days[i]));
+  }
+
   function render(data) {
     var m = data.message || {};
     currentId = m.id || '';
@@ -255,6 +283,7 @@
     fitText();
     renderWeek(data.events);
     renderWeather(data.weather);
+    renderLunch(data.lunch);
   }
 
   // ---- 登録画面 ----
