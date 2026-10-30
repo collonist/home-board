@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>つむボード 接続テスト</title>
+<style>
+  body { font-family: sans-serif; font-size: 28px; padding: 4vh 4vw; background: #fdf8ee; color: #2b2b2b; }
+  li { margin: 1.5vh 0; }
+  .ok { color: #2f7d4a; font-weight: bold; }
+  .ng { color: #c0392b; font-weight: bold; }
+  small { color: #777; font-size: 18px; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>つむボード 接続テスト</h1>
+<ul>
+  <li>fetch: <span id="fetch">確認中…</span></li>
+  <li>script: <span id="jsonp">確認中…</span></li>
+</ul>
+<p><small id="ua"></small></p>
+<script>
+(function () {
+  var API = 'https://script.google.com/macros/s/AKfycby0qWi6DHsbWcFAFCyjcVX2TT5725cdc-ttSZScFKXrthTCkpgHL5QKsNeiQn3v0xcWbw/exec?';
+  function show(id, ok, text) {
+    var el = document.getElementById(id);
+    el.className = ok ? 'ok' : 'ng';
+    el.textContent = (ok ? 'つながりました ' : 'つながりません ') + text;
+  }
+  document.getElementById('ua').textContent = navigator.userAgent;
+
+  fetch(API + 't=' + Date.now())
+    .then(function (r) { return r.json(); })
+    .then(function (d) { show('fetch', !!d.ok, d.now || ''); })
+    .catch(function (e) { show('fetch', false, String(e)); });
+
+  var timer = setTimeout(function () { show('jsonp', false, '時間切れ'); }, 15000);
+  window.pingCb = function (d) { clearTimeout(timer); show('jsonp', !!d.ok, d.now || ''); };
+  var s = document.createElement('script');
+  s.src = API + 'callback=pingCb&t=' + Date.now();
+  s.onerror = function () { clearTimeout(timer); show('jsonp', false, '読み込みエラー'); };
+  document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>
