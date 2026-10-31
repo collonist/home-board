@@ -64,7 +64,7 @@
         var j;
         try { j = JSON.parse(txt); } catch (e) { j = null; }
         if (j && j.ok === true) fin({ ok: true, data: j.data });
-        else if (j && j.ok === false && typeof j.error === 'string') fin({ ok: false, error: j.error });
+        else if (j && j.ok === false && typeof j.error === 'string') fin({ ok: false, error: j.error, retryAfterSec: typeof j.retryAfterSec === 'number' ? j.retryAfterSec : 0 });
         else fin({ ok: false, error: 'server_error', reason: 'サーバーのこたえが変' });
       }, function (e) {
         fin({ ok: false, error: 'server_error', reason: (e && e.name === 'AbortError') ? '時間切れ' : '通信できません' });
@@ -72,7 +72,18 @@
     });
   }
 
+  // ---- 予定の手動更新（サーバー側で5分に1回。残り秒数はサーバーの値を使う）----
+  var calUntil = 0;
+  function calWaitMin() { return Math.max(0, Math.ceil((calUntil - Date.now()) / 60000)); }
+  function drawCalBtn() {
+    var min = calWaitMin();
+    $('calBtn').disabled = min > 0;
+    $('calBtn').textContent = min > 0 ? 'あと' + min + '分' : '更新';
+  }
+  function setCalWait(sec) { calUntil = sec > 0 ? Date.now() + sec * 1000 : 0; drawCalBtn(); }
+
   function tickClock() {
+    drawCalBtn();
     var d = new Date();
     $('clock').innerHTML = (d.getMonth() + 1) + '/' + d.getDate() + '(' + DOW[d.getDay()] + ')<span>' + hhmm(d) + '</span>';
   }
@@ -263,24 +274,91 @@
     for (var i = 0; i < l.days.length; i++) body.appendChild(lunchRow(l.days[i]));
   }
 
-  function render(data) {
-    var m = data.message || {};
-    currentId = m.id || '';
+  // ---- 連絡板の表示（最新 / 前の連絡）----
+  var latestMsg = { id: '', sender: '', text: '', time: '', readAt: null };
+  var latestImg = null;
+  var hasPrev = false;
+  var histMode = 0;        // 0=最新, 1=1つ前, 2=2つ前
+  var histItems = [];
+  var histBusy = false;
+  var histTimer = null;
+  var HIST_RETURN_MS = 60 * 1000;
+
+  function drawPhoto(url) {
+    var img = $('photo');
+    if (url) { if (img.getAttribute('src') !== url) img.src = url; img.style.display = 'block'; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; }
+  }
+
+  function drawBoard() {
+    var showHist = histMode > 0 && histItems[histMode - 1];
+    var m = showHist ? histItems[histMode - 1] : latestMsg;
     $('sender').textContent = m.sender || '';
     $('time').textContent = m.time || '';
     $('text').textContent = m.text || 'まだ連絡はないよ';
-    if (!m.imageUnchanged) {
-      var img = $('photo');
-      if (m.imageUrl) { img.src = m.imageUrl; img.style.display = 'block'; }
-      else { img.removeAttribute('src'); img.style.display = 'none'; }
-    }
-    var unread = !!m.id && !m.readAt;
-    $('board').className = 'card' + (unread ? ' unread' : '');
-    $('readBtn').disabled = !unread;
-    var p = data.previous;
-    $('prev').textContent = p ? '前のメッセージ: ' + p.time + ' ' + p.sender + '「' + p.text + '」' : '';
-    lastVersion = m.version || '';
+    drawPhoto(showHist ? m.imageUrl : latestImg);
+    var unread = !showHist && !!latestMsg.id && !latestMsg.readAt;
+    $('board').className = 'card' + (unread ? ' unread' : '') + (showHist ? ' hist' : '');
+    $('readBtn').disabled = showHist || !unread;
+    $('histBadge').hidden = !showHist;
+    $('histBadge').textContent = histMode + 'つ前';
+    $('latestBtn').hidden = !showHist;
+    $('prevBtn').disabled = histBusy || (showHist ? histMode >= histItems.length : !hasPrev);
     fitText();
+  }
+
+  function clearHistTimer() { if (histTimer) { clearTimeout(histTimer); histTimer = null; } }
+  function armHistTimer() {
+    clearHistTimer();
+    if (histMode > 0) histTimer = setTimeout(leaveHistory, HIST_RETURN_MS);
+  }
+  function leaveHistory() {
+    clearHistTimer();
+    if (histMode === 0) return;
+    histMode = 0;
+    histItems = [];
+    drawBoard();
+  }
+  // 何かさわったら「60秒操作なし」を数え直す
+  ['pointerdown', 'touchstart', 'keydown', 'click'].forEach(function (ev) {
+    document.addEventListener(ev, function () { if (histMode > 0) armHistTimer(); }, true);
+  });
+
+  function showPrev() {
+    if (histBusy) return;
+    if (histMode > 0) {
+      if (histMode < histItems.length) { histMode++; armHistTimer(); drawBoard(); }
+      return;
+    }
+    histBusy = true;
+    $('prevBtn').disabled = true;
+    api({ api: 'history', token: token }).then(function (r) {
+      histBusy = false;
+      if (!r.ok) {
+        if (r.error === 'unauthorized') { onUnauthorized(); return; }
+        drawBoard();
+        toast('前の連絡を読めなかったよ');
+        return;
+      }
+      histItems = (r.data && r.data.items) || [];
+      if (!histItems.length) { drawBoard(); toast('前の連絡はないよ'); return; }
+      histMode = 1;
+      armHistTimer();
+      drawBoard();
+    });
+  }
+
+  function render(data) {
+    var m = data.message || {};
+    var newMsg = m.id !== latestMsg.id;
+    if (histMode > 0 && newMsg) { histMode = 0; histItems = []; clearHistTimer(); }
+    currentId = m.id || '';
+    latestMsg = { id: m.id || '', sender: m.sender || '', text: m.text || '', time: m.time || '', readAt: m.readAt || null };
+    if (!m.imageUnchanged) latestImg = m.imageUrl || null;
+    hasPrev = !!data.previous;
+    if (typeof data.calendarWaitSec === 'number') setCalWait(data.calendarWaitSec);
+    lastVersion = m.version || '';
+    drawBoard();
     renderWeek(data.events);
     renderWeather(data.weather);
     renderLunch(data.lunch);
@@ -443,29 +521,62 @@
   });
 
   var replyBusy = false;
-  function setReplyDisabled(v) {
-    document.querySelectorAll('[data-reply]').forEach(function (b) { b.disabled = v; });
+  function sendReply() {
+    if (replyBusy) return;
+    var input = $('replyText');
+    var text = input.value.trim();
+    if (!text) return;
+    replyBusy = true;
+    input.disabled = true;
+    $('replyBtn').disabled = true;
+    api({ api: 'reply', token: token, text: text }).then(function (r) {
+      replyBusy = false;
+      input.disabled = false;
+      $('replyBtn').disabled = false;
+      if (!r.ok && r.error === 'unauthorized') { onUnauthorized(); return; }
+      if (r.ok && r.data && r.data.sent) {
+        input.value = '';
+        toast('送ったよ！');
+      } else {
+        toast(!r.ok && r.error === 'rate_limited' ? 'しばらく待ってね' : '送れなかったよ');
+      }
+    });
   }
-  document.querySelectorAll('[data-reply]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      if (replyBusy) return;
-      replyBusy = true;
-      setReplyDisabled(true);
-      var text = btn.getAttribute('data-reply');
-      api({ api: 'reply', token: token, text: text }).then(function (r) {
-        replyBusy = false;
-        setReplyDisabled(false);
-        if (!r.ok && r.error === 'unauthorized') { onUnauthorized(); return; }
-        toast(r.ok && r.data && r.data.sent ? '送ったよ！' : '送れなかったよ');
-      });
+  $('replyBtn').addEventListener('click', sendReply);
+  $('replyText').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); sendReply(); }
+  });
+  var calBusy = false;
+  $('calBtn').addEventListener('click', function () {
+    if (calBusy || calWaitMin() > 0) return;
+    calBusy = true;
+    $('calBtn').disabled = true;
+    api({ api: 'refreshCalendar', token: token }).then(function (r) {
+      calBusy = false;
+      if (r.ok && r.data) {
+        setCalWait(r.data.nextAllowedSec || 300);
+        if (r.data.events) renderWeek(r.data.events);
+        toast('予定を更新したよ');
+      } else if (!r.ok && r.error === 'unauthorized') {
+        drawCalBtn(); onUnauthorized();
+      } else if (!r.ok && r.error === 'too_soon') {
+        setCalWait(r.retryAfterSec || 300);
+        toast('あと' + calWaitMin() + '分まってね');
+      } else {
+        drawCalBtn();
+        toast('更新できなかったよ');
+      }
     });
   });
+  $('prevBtn').addEventListener('click', showPrev);
+  $('latestBtn').addEventListener('click', leaveHistory);
 
   $('readBtn').addEventListener('click', function () {
     var id = currentId;
     if (!id) return;
     $('readBtn').disabled = true;
     $('board').className = 'card';
+    latestMsg.readAt = latestMsg.readAt || 'x';
     api({ api: 'read', token: token, id: id }).then(function (r) {
       if (r.ok) {
         toast(r.data && r.data.changed && r.data.notified === false ? '読んだけど、おうちの人に伝わらなかったよ' : '読んだよって伝えたよ');

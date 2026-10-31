@@ -28,7 +28,21 @@ h2 { margin: 0 0 0.8vh; font-size: clamp(16px, 2.6vh, 34px); color: var(--accent
 .actions button:active { background: var(--accent); color: #fff; }
 #readBtn { border-color: #3a8f5c; background: #e6f6ec; }
 #readBtn[disabled] { opacity: 0.35; }
-#prev { font-size: clamp(14px, 2.2vh, 28px); color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#prevBtn { border-color: #5b7fd0; background: #e9effb; }
+#prevBtn[disabled] { opacity: 0.35; }
+#latestBtn { border-color: #5b7fd0; background: #e9effb; }
+.actions button[hidden] { display: none; }
+#histBadge { margin-left: 1.2vw; padding: 0 0.6em; border-radius: 10px; background: #5b7fd0; color: #fff; font-size: 0.8em; }
+#histBadge[hidden] { display: none; }
+#board.hist { border-color: #5b7fd0; background: #f5f8ff; }
+.reply { display: flex; gap: 1vw; margin: 0 0 0.6vh; }
+.reply input { flex: 1; min-width: 0; font: inherit; font-size: clamp(16px, 2.8vh, 36px); padding: 1.2vh 1vw;
+  border: 3px solid var(--line); border-radius: 16px; background: #fff; color: var(--ink); }
+.reply input:focus { outline: none; border-color: var(--accent); }
+.reply button { flex: none; font: inherit; font-size: clamp(16px, 2.8vh, 36px); font-weight: bold; padding: 1.2vh 2.4vw; white-space: nowrap;
+  border: 3px solid var(--accent); background: #fff3e6; color: var(--ink); border-radius: 16px; }
+.reply button:active { background: var(--accent); color: #fff; }
+.reply button[disabled], .reply input[disabled] { opacity: 0.5; }
 .side { grid-column: 2; grid-row: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; min-height: 0; }
 .soon { font-size: clamp(18px, 3vh, 40px); color: var(--sub); }
 #week { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; overflow: hidden; }
@@ -94,3 +108,9 @@ h2 { margin: 0 0 0.8vh; font-size: clamp(16px, 2.6vh, 34px); color: var(--accent
 #keypad button.sm { font-size: 2.8vh; }
 #keypad button.go { border-color: #3a8f5c; background: #e6f6ec; }
 #keypad button.go:active { background: #3a8f5c; color: #fff; }
+
+#week h2 { display: flex; align-items: center; justify-content: space-between; }
+#calBtn { font: inherit; font-size: clamp(13px, 2vh, 24px); font-weight: bold; padding: 0.4vh 1.2vw; white-space: nowrap;
+  border: 2px solid var(--accent); background: #fff3e6; color: var(--ink); border-radius: 12px; }
+#calBtn:active { background: var(--accent); color: #fff; }
+#calBtn[disabled] { opacity: 0.45; }

@@ -18,18 +18,20 @@
 
   <section id="board" class="card">
     <h2>連絡板</h2>
-    <div class="meta"><span id="sender"></span><small id="time"></small></div>
+    <div class="meta"><span id="sender"></span><small id="time"></small><span id="histBadge" hidden></span></div>
     <div class="body">
       <div id="text">読み込み中…</div>
       <img id="photo" alt="写真">
     </div>
     <div class="actions">
-      <button type="button" data-reply="わかった！">わかった！</button>
-      <button type="button" data-reply="今帰ったよ">今帰ったよ</button>
-      <button type="button" data-reply="電話して">電話して</button>
+      <button type="button" id="prevBtn" disabled>前の連絡</button>
+      <button type="button" id="latestBtn" hidden>さいしん</button>
       <button type="button" id="readBtn" disabled>読んだ</button>
     </div>
-    <div id="prev"></div>
+    <div class="reply">
+      <input type="text" id="replyText" maxlength="200" placeholder="おうちの人へメッセージ" autocomplete="off" enterkeyhint="send">
+      <button type="button" id="replyBtn">送る</button>
+    </div>
   </section>
 
   <div class="side">
@@ -37,7 +39,7 @@
     <section id="ln" class="card"><h2>今週の給食</h2><div id="lnBody"><div class="soon">準備中</div></div></section>
   </div>
 
-  <section id="week" class="card"><h2>今週の予定</h2><div id="weekList"><div class="soon">準備中</div></div></section>
+  <section id="week" class="card"><h2><span>今週の予定</span><button type="button" id="calBtn">更新</button></h2><div id="weekList"><div class="soon">準備中</div></div></section>
 </div>
 <div id="toast"></div>
 
