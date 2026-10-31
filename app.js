@@ -350,8 +350,9 @@
       pairBusy = false;
       if (r.ok && r.data && /^[0-9a-f]{64}$/.test(r.data.token || '')) {
         token = r.data.token;
-        if (!saveToken(token)) toast('この端末では記憶できないよ');
+        if (!saveToken(token)) { noStore = true; toast('この端末では記憶できないよ'); }
         hidePair();
+        setStatus('');
         lastSuccess = Date.now();
         refresh();
         startPolling();
@@ -396,11 +397,14 @@
     showPair('番号をいれてね');
   }
 
-  function setStatus(txt) { $('status').textContent = txt; }
+  // トークンを保存できない端末：reload すると登録画面に戻るので、reload を止めて注意を出し続ける
+  var noStore = false;
+  var NOSTORE_MSG = 'この端末では記憶できません（おうちの人へ）';
+  function setStatus(txt) { $('status').textContent = noStore ? NOSTORE_MSG + (txt ? ' / ' + txt : '') : txt; }
 
   function refresh() {
     if (document.hidden || busy || pairOpen()) return;
-    if (Date.now() - lastSuccess >= RELOAD_MS) {
+    if (!noStore && Date.now() - lastSuccess >= RELOAD_MS) {
       location.reload();
       return;
     }
@@ -463,7 +467,10 @@
     $('readBtn').disabled = true;
     $('board').className = 'card';
     api({ api: 'read', token: token, id: id }).then(function (r) {
-      if (r.ok) { toast('読んだよって伝えたよ'); return; }
+      if (r.ok) {
+        toast(r.data && r.data.changed && r.data.notified === false ? '読んだけど、おうちの人に伝わらなかったよ' : '読んだよって伝えたよ');
+        return;
+      }
       if (r.error === 'unauthorized') { onUnauthorized(); return; }
       toast('伝えられなかったよ');
       refresh();
