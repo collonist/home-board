@@ -114,3 +114,28 @@ h2 { margin: 0 0 0.8vh; font-size: clamp(16px, 2.6vh, 34px); color: var(--accent
   border: 2px solid var(--accent); background: #fff3e6; color: var(--ink); border-radius: 12px; }
 #calBtn:active { background: var(--accent); color: #fff; }
 #calBtn[disabled] { opacity: 0.45; }
+
+#weekList { cursor: pointer; }
+#weekModal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(43, 43, 43, 0.6); }
+#weekModal[hidden] { display: none; }
+#weekPanel { display: flex; flex-direction: column; width: 92vw; height: 92vh; box-sizing: border-box; padding: 1.6vh 2vw; background: var(--card);
+  border: 3px solid var(--line); border-radius: 22px; overflow: hidden; }
+.wm-head { flex: none; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1vh; }
+.wm-head h2 { margin: 0; font-size: clamp(22px, 4vh, 52px); }
+#weekClose { font: inherit; font-size: clamp(20px, 3.4vh, 44px); font-weight: bold; min-width: 8em; min-height: 7vh; padding: 0.6vh 2vw; white-space: nowrap;
+  border: 3px solid var(--accent); background: #fff3e6; color: var(--ink); border-radius: 16px; }
+#weekClose:active { background: var(--accent); color: #fff; }
+#weekBody { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.wm-day { display: flex; gap: 2vw; padding: 1vh 1vw; margin-bottom: 0.8vh; border-radius: 12px; border: 2px solid transparent; border-bottom-color: var(--line);
+  font-size: clamp(20px, 3.6vh, 46px); line-height: 1.3; }
+.wm-day.today { background: #fff3e6; border-color: var(--accent); }
+.wm-day.past { opacity: 0.5; }
+.wm-head-day { flex: 0 0 28%; min-width: 0; font-weight: bold; }
+.wm-day.sat .wm-date, .wm-day.sun .wm-date { color: #d0453b; }
+.wm-head-day .hol { font-weight: normal; font-size: 0.75em; color: #d0453b; overflow-wrap: anywhere; }
+.wm-items { flex: 1; min-width: 0; }
+.wm-item { display: flex; align-items: baseline; margin-bottom: 0.3vh; }
+.wm-item .tt { flex: 1; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+.wm-item .tm { flex: none; font-weight: bold; margin-right: 0.6em; }
+.wm-item .tag { flex: none; font-size: 0.75em; padding: 0 0.5em; margin-right: 0.6em; border-radius: 6px; background: var(--accent); color: #fff; }
+.wm-none { color: var(--sub); font-size: 0.8em; }

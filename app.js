@@ -181,15 +181,97 @@
     }
   }
 
+  // 予定の拡大表示（一覧をタップ）。全件を省略なしで大きく出す
+  var weekEvents = null;
+  var weekModalTimer = null;
+  var WEEK_MODAL_MS = 60 * 1000;
+
+  function weekModalOpen() { return !$('weekModal').hidden; }
+  function closeWeekModal() {
+    if (weekModalTimer) { clearTimeout(weekModalTimer); weekModalTimer = null; }
+    $('weekModal').hidden = true;
+    $('weekBody').textContent = '';
+  }
+  function armWeekModalTimer() {
+    if (weekModalTimer) clearTimeout(weekModalTimer);
+    weekModalTimer = setTimeout(closeWeekModal, WEEK_MODAL_MS);
+  }
+  function drawWeekModal() {
+    var body = $('weekBody');
+    body.textContent = '';
+    var days = weekEvents.days;
+    for (var i = 0; i < days.length; i++) {
+      var day = days[i];
+      var row = document.createElement('div');
+      row.className = 'wm-day' + (day.isToday ? ' today' : '') + (day.isPast ? ' past' : '') +
+        (day.dow === '土' ? ' sat' : '') + (day.dow === '日' ? ' sun' : '');
+      var head = document.createElement('div');
+      head.className = 'wm-head-day';
+      var dt = document.createElement('div');
+      dt.className = 'wm-date';
+      dt.textContent = day.md + '(' + day.dow + ')';
+      head.appendChild(dt);
+      if (day.holiday) {
+        var hol = document.createElement('div');
+        hol.className = 'hol';
+        hol.textContent = day.holiday;
+        head.appendChild(hol);
+      }
+      var box = document.createElement('div');
+      box.className = 'wm-items';
+      var items = day.items || [];
+      for (var k = 0; k < items.length; k++) {
+        var it = items[k];
+        var line = document.createElement('div');
+        line.className = 'wm-item';
+        var lead = document.createElement('span');
+        if (it.allDay) { lead.className = 'tag'; lead.textContent = '終日'; }
+        else { lead.className = 'tm'; lead.textContent = it.time; }
+        var tt = document.createElement('span');
+        tt.className = 'tt';
+        tt.textContent = it.title;
+        line.appendChild(lead);
+        line.appendChild(tt);
+        box.appendChild(line);
+      }
+      if (!items.length) {
+        var none = document.createElement('div');
+        none.className = 'wm-none';
+        none.textContent = 'よていなし';
+        box.appendChild(none);
+      }
+      row.appendChild(head);
+      row.appendChild(box);
+      body.appendChild(row);
+    }
+  }
+  function openWeekModal() {
+    if (!weekEvents) return;
+    drawWeekModal();
+    $('weekModal').hidden = false;
+    $('weekBody').scrollTop = 0;
+    armWeekModalTimer();
+  }
+  $('weekList').addEventListener('click', openWeekModal);
+  $('weekClose').addEventListener('click', closeWeekModal);
+  $('weekModal').addEventListener('click', function (e) { if (e.target === $('weekModal')) closeWeekModal(); });
+  ['pointerdown', 'touchstart', 'click', 'scroll', 'keydown'].forEach(function (ev) {
+    $('weekModal').addEventListener(ev, function () { if (weekModalOpen()) armWeekModalTimer(); }, true);
+  });
+
   function renderWeek(events) {
     var list = $('weekList');
     if (!events || !events.days) {
+      weekEvents = null;
+      closeWeekModal();
       list.innerHTML = '<div class="soon">準備中</div>';
       return;
     }
+    weekEvents = events;
     list.innerHTML = '';
     for (var i = 0; i < events.days.length; i++) list.appendChild(weekRow(events.days[i]));
     fitWeek();
+    if (weekModalOpen()) drawWeekModal();
   }
 
   function wxEl(tag, cls, text) {
